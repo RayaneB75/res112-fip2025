@@ -59,7 +59,7 @@ def receive_messages():
         if not data:
             break
         # Print the received message
-        print("Received:", data.decode("utf-8"))
+        print("\nReceived:", data.decode("utf-8"))
 
 # Start a separate thread to receive messages
 receive_thread = threading.Thread(target=receive_messages)
@@ -67,7 +67,7 @@ receive_thread.start()
 
 done = False
 while not done:
-    msg = "Type the string to send: (quit/exit to end) \n"
+    msg = "\nSend:"
     inputString = input(msg)
     if inputString in ("exit", "quit"):
         done = True
