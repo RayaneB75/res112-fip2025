@@ -45,26 +45,25 @@ signal.signal(signal.SIGINT, close_connection)
 ## The main program
 
 # socket creation
-# <your code ...>
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 
 # bind with a local address and port
-# <your code ...>
+s.bind((host, options.port))
 
 # make it a server socket
-# <your code ...>
+s.listen(1)
 
 while True:
     # wait for a connection
-    # <your code ...>
-
+    conn, addr = s.accept()
+    print(f"Connection from {addr}")
     while True:
         # receive the data
-        # <your code ...>
-        data = None
+        data = conn.recv(1024)
         if not data:
             break
         print("Received: " + data.decode('utf-8'))
     print("Connection broken!")
     # we close the connection
-    # ...
+    conn.close()
 

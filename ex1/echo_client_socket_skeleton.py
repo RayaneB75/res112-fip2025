@@ -45,10 +45,10 @@ signal.signal(signal.SIGINT, close_connection)
 #################################################
 ## The main program
 # Socket creation
-# <your code ...>
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 
 # Connection with the server
-# <your code ...>
+s.connect((options.host, options.port))
 
 done = False
 while (not done):
@@ -58,9 +58,6 @@ while (not done):
         done = True
     else:
         # Encode the data (in UTF-8)
-        # <your code ...> 
+        inputString = inputString.encode("utf-8")
         # Send the data
-        # <your code ...> (do not forget to remove the pass instruction)
-        pass
-           
-           
+        s.sendall(inputString)          
