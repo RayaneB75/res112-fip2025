@@ -7,6 +7,7 @@ import os
 import argparse
 import socket
 import signal
+import threading
 
 #################################################
 ## Parsing command line arguments
@@ -25,7 +26,7 @@ if options.port > 49151 or options.port < 1024:
 ## Global variables
 host = ''  # address to bind to. '' means all available interfaces
 s = None   # variable to store your socket
-
+connections = []  # list to store client connections
 
 #################################################
 ## Handling of Ctrl+C
@@ -42,28 +43,38 @@ signal.signal(signal.SIGINT, close_connection)
 #################################################
 ## The main program
 
-# socket creation
+# Socket creation
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 
-# bind with a local address and port
+# Bind with a local address and port
 s.bind((host, options.port))
 
-# make it a server socket
+# Make it a server socket
 s.listen(2)
 
-# accept connections from outside for 2 clients so that we make a chat between them
-for i in range(2):
-    pid = os.fork()
-    if pid != 0:
-        while True:
-            # wait for a connection
-            conn, addr = s.accept()
-            while True:
-                # receive the data
-                data = conn.recv(1024)
-                if not data:
-                    break
-                print(f"{i} :")
-                #print(f"Connection from {addr}, Received: {data.decode('utf-8')}")
-            # we close the connection
-            conn.close()
+# Function to handle individual client connections
+def handle_client_connection(conn):
+    while True:
+        # Receive the data
+        data = conn.recv(1024)
+        if not data:
+            break
+        # Forward the message to the other client
+        for connection in connections:
+            if connection != conn:
+                connection.send(data)
+    # Close the connection
+    conn.close()
+
+# Function to accept client connections
+def accept_connections():
+    for i in range(2):
+        # Wait for a connection
+        conn, addr = s.accept()
+        # Add the connection to the list
+        connections.append(conn)
+        # Start a new thread to handle the client connection
+        threading.Thread(target=handle_client_connection, args=(conn,)).start()
+
+# Start accepting client connections
+accept_connections()
