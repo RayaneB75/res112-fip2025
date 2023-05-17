@@ -7,7 +7,6 @@ sends it to a server.
 import argparse
 import socket
 import signal
-import threading
 
 #################################################
 ## Parsing command line arguments
@@ -51,20 +50,6 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 # Connection with the server
 s.connect((options.host, options.port))
 
-# Function to receive messages from the server
-def receive_messages():
-    while True:
-        # Receive the data from the server
-        data = s.recv(1024)
-        if not data:
-            break
-        # Print the received message
-        print("\nReceived:", data.decode("utf-8"))
-
-# Start a separate thread to receive messages
-receive_thread = threading.Thread(target=receive_messages)
-receive_thread.start()
-
 done = False
 while not done:
     msg = "\nSend:"
@@ -76,9 +61,6 @@ while not done:
         inputString = inputString.encode("utf-8")
         # Send the data
         s.sendall(inputString)
-
-# Wait for the receive thread to finish
-receive_thread.join()
 
 # Close the socket
 s.close()
