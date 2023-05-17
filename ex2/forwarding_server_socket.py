@@ -5,8 +5,6 @@
 
 import argparse
 import socket
-import select
-import queue
 import signal
 
 #################################################
@@ -52,40 +50,17 @@ server.bind((host, options.port))
 # make it a server socket
 server.listen(2)
 
-inputs = [server]
-outputs = []
-messages = {}
-
-while inputs:
-    readable, writable, exceptional = select.select(inputs, outputs, inputs)
-    for s in readable:
-        if s is server:
-            connection, address = s.accept()
-            connection.setblocking(0)
-            inputs.append(connection)
-            messages[connection] = queue.Queue()
-        else:
-            data = s.recv(1024)
-            if data:
-                print(f"Received {data.decode('utf-8')} from {address}")
-                messages[s].put(data)
-                outputs.append(s)
-            else:
-                print(f"Closing connection with {address}")
-                inputs.remove(s)
-                s.close()
-    for s in writable:
-        try:
-            next_msg = messages[s].get_nowait()
-        except queue.Empty:
-            outputs.remove(s)
-        else:
-            print(f"Sending {next_msg.decode('utf-8')} to {address}")
-            s.send(next_msg)
-    for s in exceptional:
-        print(f"Closing connection with {address}")
-        inputs.remove(s)
-        if s in outputs:
-            outputs.remove(s)
-        s.close()
-        del messages[s]
+while True:
+    conn1, addr1 = server.accept()
+    print(f"Connection from {addr1}")
+    conn1.sendall('Hello, client 1!'.encode('utf-8'))
+    
+    conn2, addr2 = server.accept()
+    conn2.sendall('Hello, client 2!'.encode('utf-8'))
+    
+    while True:
+        data = conn1.recv(1024)
+        if not data:
+            print("Client closed the connection")
+            break
+        conn2.sendall(data)
