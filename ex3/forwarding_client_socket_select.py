@@ -7,12 +7,13 @@ sends it to a server.
 import argparse
 import socket
 import signal
+import select
 
 #################################################
-## Parsing command line arguments
+# Parsing command line arguments
 parser = argparse.ArgumentParser(description='Echo Client')
 parser.add_argument('-p', '--port', dest='port', type=int, default=1800,
-                    metavar="[1024-49151]", 
+                    metavar="[1024-49151]",
                     help='the server port number to connect to')
 parser.add_argument("-m", "--machine", dest="host", type=str, default='localhost',
                     help="the server name or IP address to connect to")
@@ -25,12 +26,12 @@ if options.port > 49151 or options.port < 1024:
 
 
 #################################################
-## Global variables
+# Global variables
 s = None   # variable to store your socket
 
 
 #################################################
-## Handling of Ctrl+C
+# Handling of Ctrl+C
 def close_connection(sig, frame):
     print('Ctrl+C Pressed. Closing the socket...')
     if s:
@@ -38,40 +39,34 @@ def close_connection(sig, frame):
         s.close()
     exit(0)
 
+
 # Register this handler for Ctrl+C (SIGINT) event
 signal.signal(signal.SIGINT, close_connection)
 
 
 #################################################
-## The main program
+# The main program
 # Socket creation
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 
 # Connection with the server
 s.connect((options.host, options.port))
 
+# Read from the keyboard input and send it to the server,
+# and display the response from the server
 while True:
-    data = s.recv(1024)
-    if data.decode('utf-8') == 'Hello, client 1!':
-        print(data.decode('utf-8'))
-        done = False
-        while (not done):
-            msg = "Type the string to send: (quit/exit to end) \n"
-            inputString = input(msg)
-            if inputString in ("exit", "quit"):
-                done = True
-            else:
-                # Encode the data (in UTF-8)
-                inputString = inputString.encode("utf-8")
-                # Send the data
-                s.sendall(inputString)
-    elif data.decode('utf-8') == 'Hello, client 2!':
-        print(data.decode('utf-8'))
-        while True:
+    readable, _, _ = select.select([s, 0], [], [])
+    for r in readable:
+        if r == s:
             data = s.recv(1024)
             if not data:
-                break
-            print(data.decode('utf-8'))
-    if not data:
-        print("Server closed the connection")
-        s.close()
+                print("Server closed the connection")
+                exit(0)
+            print(data.decode())
+        else:
+            data = input()
+            s.send(data.encode())
+
+
+# Close the socket
+s.close()

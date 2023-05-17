@@ -50,42 +50,28 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 server.bind((host, options.port))
 
 # make it a server socket
-server.listen(2)
+server.listen(5)
 
-inputs = [server]
-outputs = []
-messages = {}
+sockets = [server]
+id = 0
 
-while inputs:
-    readable, writable, exceptional = select.select(inputs, outputs, inputs)
+while True:
+    readable, _, _ = select.select(sockets, [], [])
     for s in readable:
         if s is server:
-            connection, address = s.accept()
-            connection.setblocking(0)
-            inputs.append(connection)
-            messages[connection] = queue.Queue()
+            connection, addr = server.accept()
+            sockets.append(connection)
+            id += 1
+            print(f"Connection from {addr} with id {id}")
+            connection.sendall(f'Hello, client {id}!'.encode('utf-8'))
         else:
             data = s.recv(1024)
             if data:
-                print(f"Received {data.decode('utf-8')} from {address}")
-                messages[s].put(data)
-                outputs.append(s)
+                print(f"Received data from client {id}: {data.decode('utf-8')}")
+                for s in sockets:
+                    if s is not server:
+                        s.sendall(data)
             else:
-                print(f"Closing connection with {address}")
-                inputs.remove(s)
+                print(f"Client {id} disconnected")
+                sockets.remove(s)
                 s.close()
-    for s in writable:
-        try:
-            next_msg = messages[s].get_nowait()
-        except queue.Empty:
-            outputs.remove(s)
-        else:
-            print(f"Sending {next_msg.decode('utf-8')} to {address}")
-            s.send(next_msg)
-    for s in exceptional:
-        print(f"Closing connection with {address}")
-        inputs.remove(s)
-        if s in outputs:
-            outputs.remove(s)
-        s.close()
-        del messages[s]
