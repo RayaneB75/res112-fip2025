@@ -3,11 +3,11 @@
 """A server module for the socket echo.
 """
 
-import os
 import argparse
 import socket
+import select
+import queue
 import signal
-import threading
 
 #################################################
 ## Parsing command line arguments
@@ -25,16 +25,16 @@ if options.port > 49151 or options.port < 1024:
 #################################################
 ## Global variables
 host = ''  # address to bind to. '' means all available interfaces
-s = None   # variable to store your socket
-connections = []  # list to store client connections
+server = None   # variable to store your socket
+
 
 #################################################
 ## Handling of Ctrl+C
 def close_connection(sig, frame):
     print('Ctrl+C Pressed. Closing the socket...')
-    if s:
+    if server:
         # close the socket
-        s.close()
+        server.close()
     exit(0)
 
 # Register this handler for Ctrl+C (SIGINT) event
@@ -43,38 +43,49 @@ signal.signal(signal.SIGINT, close_connection)
 #################################################
 ## The main program
 
-# Socket creation
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+# socket creation
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 
-# Bind with a local address and port
-s.bind((host, options.port))
+# bind with a local address and port
+server.bind((host, options.port))
 
-# Make it a server socket
-s.listen(2)
+# make it a server socket
+server.listen(2)
 
-# Function to handle individual client connections
-def handle_client_connection(conn):
-    while True:
-        # Receive the data
-        data = conn.recv(1024)
-        if not data:
-            break
-        # Forward the message to the other client
-        for connection in connections:
-            if connection != conn:
-                connection.send(data)
-    # Close the connection
-    conn.close()
+inputs = [server]
+outputs = []
+messages = {}
 
-# Function to accept client connections
-def accept_connections():
-    for i in range(2):
-        # Wait for a connection
-        conn, addr = s.accept()
-        # Add the connection to the list
-        connections.append(conn)
-        # Start a new thread to handle the client connection
-        threading.Thread(target=handle_client_connection, args=(conn,)).start()
-
-# Start accepting client connections
-accept_connections()
+while inputs:
+    readable, writable, exceptional = select.select(inputs, outputs, inputs)
+    for s in readable:
+        if s is server:
+            connection, address = s.accept()
+            connection.setblocking(0)
+            inputs.append(connection)
+            messages[connection] = queue.Queue()
+        else:
+            data = s.recv(1024)
+            if data:
+                print(f"Received {data.decode('utf-8')} from {address}")
+                messages[s].put(data)
+                outputs.append(s)
+            else:
+                print(f"Closing connection with {address}")
+                inputs.remove(s)
+                s.close()
+    for s in writable:
+        try:
+            next_msg = messages[s].get_nowait()
+        except queue.Empty:
+            outputs.remove(s)
+        else:
+            print(f"Sending {next_msg.decode('utf-8')} to {address}")
+            s.send(next_msg)
+    for s in exceptional:
+        print(f"Closing connection with {address}")
+        inputs.remove(s)
+        if s in outputs:
+            outputs.remove(s)
+        s.close()
+        del messages[s]
