@@ -7,7 +7,6 @@ sends it to a server.
 import argparse
 import socket
 import signal
-import select
 
 #################################################
 # Parsing command line arguments
@@ -52,21 +51,28 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 # Connection with the server
 s.connect((options.host, options.port))
 
-# Read from the keyboard input and send it to the server,
-# and display the response from the server
 while True:
-    readable, _, _ = select.select([s, 0], [], [])
-    for r in readable:
-        if r == s:
+    data = s.recv(1024)
+    if data.decode('utf-8') == 'Hello, client 1!':
+        print(data.decode('utf-8'))
+        done = False
+        while (not done):
+            msg = "Type the string to send: (quit/exit to end) \n"
+            inputString = input(msg)
+            if inputString in ("exit", "quit"):
+                done = True
+            else:
+                # Encode the data (in UTF-8)
+                inputString = inputString.encode("utf-8")
+                # Send the data
+                s.sendall(inputString)
+    elif data.decode('utf-8') == 'Hello, client 2!':
+        print(data.decode('utf-8'))
+        while True:
             data = s.recv(1024)
             if not data:
-                print("Server closed the connection")
-                exit(0)
-            print(data.decode())
-        else:
-            data = input()
-            s.send(data.encode())
-
-
-# Close the socket
-s.close()
+                break
+            print(data.decode('utf-8'))
+    if not data:
+        print("Server closed the connection")
+        s.close()
