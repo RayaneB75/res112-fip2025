@@ -55,6 +55,7 @@ s.connect((options.host, options.port))
 # Read from the keyboard input and send it to the server,
 # and display the response from the server
 while True:
+    print("\nMoi: ", end="")
     readable, _, _ = select.select([s, 0], [], [])
     for r in readable:
         if r == s:
@@ -62,7 +63,7 @@ while True:
             if not data:
                 print("Server closed the connection")
                 exit(0)
-            print(data.decode())
+            print(f"\nLui: {data.decode()}")
         else:
             data = input()
             s.send(data.encode())
