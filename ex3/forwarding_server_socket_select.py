@@ -31,10 +31,9 @@ server = None   # variable to store your socket
 #################################################
 # Handling of Ctrl+C
 def close_connection(sig, frame):
-    print('Ctrl+C Pressed. Closing the socket...')
-    if server:
-        # close the socket
-        server.close()
+    print('Ctrl+C Pressed. Closing the sockets...')
+    for s in sockets:
+        s.close()
     exit(0)
 
 
