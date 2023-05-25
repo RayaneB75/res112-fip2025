@@ -24,7 +24,7 @@ if options.port > 49151 or options.port < 1024:
 
 #################################################
 # Global variables
-host = '45.90.160.104'  # address to bind to. '' means all available interfaces
+host = ''  # address to bind to. '' means all available interfaces
 server = None   # variable to store your socket
 
 

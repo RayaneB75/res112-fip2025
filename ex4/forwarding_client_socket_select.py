@@ -52,8 +52,10 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 # Connection with the server
 s.connect((options.host, options.port))
 
-# Read from the keyboard input and send it to the server,
-# and display the response from the server
+username = input("Enter your username: ")
+print(f"Hello {username}!")
+print("Type the string to send: (quit/exit to end) \n")
+
 while True:
     print("\nMoi: ", end="")
     readable, _, _ = select.select([s, 0], [], [])
@@ -63,11 +65,10 @@ while True:
             if not data:
                 print("Server closed the connection")
                 exit(0)
-            print(f"\nLui: {data.decode()}")
+            print(f"\n{data.decode()}")
         else:
-            data = input()
+            data = username + ": " + input()
             s.send(data.encode())
-
 
 # Close the socket
 s.close()
