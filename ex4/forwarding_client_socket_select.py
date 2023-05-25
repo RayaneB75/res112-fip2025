@@ -57,7 +57,7 @@ print(f"Hello {username}!")
 print("Type the string to send: (quit/exit to end) \n")
 
 while True:
-    print(f"\{username}: ", end="")
+    print(f"{username}: ", end="")
     readable, _, _ = select.select([s, 0], [], [])
     for r in readable:
         if r == s:
