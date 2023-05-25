@@ -48,19 +48,22 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 server.bind((host, options.port))
 
 # make it a server socket
-server.listen(2)
+server.listen(3)
+
+clients = []
 
 while True:
-    conn1, addr1 = server.accept()
-    print(f"Connection from {addr1}")
-    conn1.sendall('Hello, client 1!'.encode('utf-8'))
-    
-    conn2, addr2 = server.accept()
-    conn2.sendall('Hello, client 2!'.encode('utf-8'))
+    for i in range(3):
+        c, a = server.accept()
+        clients.append(c)
+        print(f"Connection from {a}")
+        msg = f"Hello, client {i+1}!"
+        c.sendall(msg.encode('utf-8'))
     
     while True:
-        data = conn1.recv(1024)
+        data = clients[0].recv(1024)
         if not data:
             print("Client closed the connection")
             break
-        conn2.sendall(data)
+        for c in clients[1:]:
+            c.sendall(data)

@@ -65,7 +65,7 @@ while True:
                 inputString = inputString.encode("utf-8")
                 # Send the data
                 s.sendall(inputString)    
-    elif data.decode('utf-8') == 'Hello, client 2!':
+    elif data.decode('utf-8').startswith('Hello, client'):
         print(data.decode('utf-8'))
         while True:
             data = s.recv(1024)
